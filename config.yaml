@@ -1,0 +1,7 @@
+source: "online"          # "online" или "offline"
+input_type: "sra"         # "sra" (FASTQ) or "assembly"
+id: "SRR123456"           # SRA_ID or GCF/GCA for assemblies
+offline_reads:
+  - "~path/to/SRR123456_1.fastq"
+  - "~path/to/SRR123456_2.fastq"
+offline_assembly: "path/to/assembly/contigs.fasta"

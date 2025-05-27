@@ -1,0 +1,15 @@
+name: amines_search
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.11
+  - snakemake
+  - sra-tools
+  - spades
+  - fastqc
+  - trimmomatic
+  - prokka
+  - quast
+  - eggnog-mapper

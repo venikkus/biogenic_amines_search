@@ -1,0 +1,121 @@
+configfile: "config.yaml"
+
+SOURCE = config["source"]
+INPUT_TYPE = config["input_type"]
+ID = config["id"]
+
+rule all:
+    input:
+        directory(f"quast_output/{ID}"),
+        directory(f"prokka_output/{ID}")
+
+# сборка из сырых ридов
+if INPUT_TYPE == "sra":
+    if SOURCE == "offline":
+        rule copy_offline_reads:
+            input:
+                r1 = config["offline_reads"][0],
+                r2 = config["offline_reads"][1]
+            output:
+                f"input_reads/{ID}_1.fastq",
+                f"input_reads/{ID}_2.fastq"
+            shell:
+                """
+                mkdir -p input_reads
+                cp {input.r1} input_reads/{wildcards.id}_1.fastq
+                cp {input.r2} input_reads/{wildcards.id}_2.fastq
+                """
+
+    if SOURCE == "online":
+        rule download_sra:
+            output:
+                f"sra/{ID}/{ID}.sra"
+            shell:
+                "prefetch {ID} -O sra/"
+
+        rule split_files:
+            input:
+                f"sra/{ID}/{ID}.sra"
+            output:
+                f"input_reads/{ID}_1.fastq",
+                f"input_reads/{ID}_2.fastq"
+            shell:
+                "fasterq-dump --split-files {input} --outdir input_reads/"
+
+    rule trimming_reads:
+        input:
+            f"input_reads/{ID}_1.fastq",
+            f"input_reads/{ID}_2.fastq"
+        output:
+            f"clean_data/{ID}_1P.fastq",
+            f"clean_data/{ID}_2P.fastq"
+        shell:
+            """
+            mkdir -p clean_data
+            trimmomatic PE {input[0]} {input[1]} \
+            clean_data/{wildcards.id}_1P.fastq clean_data/{wildcards.id}_1U.fastq \
+            clean_data/{wildcards.id}_2P.fastq clean_data/{wildcards.id}_2U.fastq \
+            LEADING:20 TRAILING:20 MINLEN:20
+            """
+
+    rule genome_assembly:
+        input:
+            f"clean_data/{ID}_1P.fastq",
+            f"clean_data/{ID}_2P.fastq"
+        output:
+            f"assembly/{ID}/contigs.fasta"
+        shell:
+            """
+            mkdir -p assembly/{wildcards.id}
+            spades.py -1 {input[0]} -2 {input[1]} -o assembly/{wildcards.id}
+            """ # isolate for procariota
+
+# готовая сборка
+if INPUT_TYPE == "assembly":
+    if SOURCE == "offline":
+        rule copy_offline_assembly:
+            input:
+                config["offline_assembly"]
+            output:
+                f"assembly/{ID}/contigs.fasta"
+            shell:
+                """
+                mkdir -p assembly/{wildcards.id}
+                cp {input} assembly/{wildcards.id}/contigs.fasta
+                """
+
+    if SOURCE == "online":
+        rule download_assembly:
+            output:
+                f"assembly/{ID}/contigs.fasta"
+            shell:
+                """
+                mkdir -p assembly/{wildcards.id}
+                datasets download genome accession {ID} --filename {ID}.zip
+                unzip {ID}.zip -d assembly/{wildcards.id}
+                # Предположим, что contigs.fasta — это там (может быть другой путь!)
+                cp assembly/{wildcards.id}/*/*.fna assembly/{wildcards.id}/contigs.fasta
+                """
+
+# общие
+rule run_quast:
+    input:
+        f"assembly/{ID}/contigs.fasta"
+    output:
+        directory(f"quast_output/{ID}")
+    shell:
+        """
+        mkdir -p quast_output/{wildcards.id}
+        quast {input} -o quast_output/{wildcards.id}
+        """
+
+rule run_prokka:
+    input:
+        f"assembly/{ID}/contigs.fasta"
+    output:
+        directory(f"prokka_output/{ID}")
+    shell:
+        """
+        mkdir -p prokka_output/{wildcards.id}
+        prokka --outdir prokka_output/{wildcards.id} --prefix {wildcards.id} {input}
+        """
