@@ -8,6 +8,15 @@ Biogenic amines (histamine, tyramine) can cause poisoning and allergies.
 
 The consumption of foods containing high concentrations of biogenic amines has been associated with health hazards [1].
 
+## Research objectives
+
+The pipeline will allow testing the genetic data of bacterial strains for the presence of genes responsible for the synthesis of biogenic amines. The pipeline screens bacterial genome assemblies or raw reads to detect the following genes:
+
+
+## Relevance of the study
+
+Biogenic amines can cause poisoning and allergies. The consumption of foods containing high concentrations of biogenic amines has been associated with health hazards [1]. 
+
 ## Content
 
 - [Pipeline Overview](#pipeline-overview)
@@ -52,7 +61,7 @@ git clone https://github.com/venikkus/biogenic_amines_search.git
 cd biogenic_amines_search
 ```
 
-Create the conda environment:
+2. Use the provided environment.yaml file to create the conda environment.  If you don't have conda, use these installation instuctions:
 
 ```bash
 conda env create -f environment.yaml
@@ -63,11 +72,11 @@ conda activate amines_search
 Running instructions
 The pipeline is configured via config.yaml, where you can specify:
 
-source (online / offline)
+>`source` (online / offline)
 
-input_type (sra / assembly)
+>`input_type` (sra / assembly)
 
-id (NCBI accession or sample ID)
+>`id` (NCBI accession or sample ID)
 
 Run the full pipeline
 ```bash
@@ -75,9 +84,9 @@ snakemake -p --cores [NUM_CORES] --config id=[ID] input_type=sra source=[SOURCE]
 
 ```
 
-[NUM_CORES] — number of CPU cores to use (e.g., 4, 16, etc.)
-[ID] - SRA ID or assembly ID.
-[SOURCE] -- offline (from folder) or online (from )
+- [NUM_CORES] — number of CPU cores to use (e.g., 4, 16, etc.)
+- [ID] - SRA ID or assembly ID.
+- [SOURCE] -- offline (from folder) or online (from )
 
 
 ## Features
@@ -99,6 +108,14 @@ Prokka-generated GFF, GBK, and other annotation files.
 5. Assembly Quality
 quast_output/{id}/
 QUAST reports, including report.html and statistics.
+
+## References
+
+prokka 1.14.6
+snakemake 9.5.1
+sra-toolkit 2.11.3
+SPAdes genome assembler v4.0.0
+QUAST v5.3.0
 
 ## Contact
 

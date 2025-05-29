@@ -1,0 +1,19 @@
+name: amines_search
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.11
+  - snakemake
+  - sra-tools
+  - ncbi-datasets-cli
+  - spades
+  - fastqc
+  - trimmomatic
+  - prokka
+  - quast
+  - eggnog-mapper
+  - pandas 
+  - seaborn 
+  - matplotlib
