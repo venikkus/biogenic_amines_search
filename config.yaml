@@ -38,12 +38,12 @@ assembly_samples:
   id: 
     - offline_GCF_901482635.1
   source: "offline"
-  local_path: "./"
+  local_path: "."
 
 sra_samples:
   id: 
-    - SRR8594964
+    - offline_SRR8594964
   source: "offline"
-  local_path: "./offline_SRR8594964" 
+  local_path: "." 
 
 genes_of_interest: "genes_of_interest.txt"

@@ -15,12 +15,6 @@ This repository contains a **Snakemake**-based pipeline for searching for biogen
 - [Output structure](#output-structure)
 - [Contact](#contact)
 
-## Research overview
-
-Biogenic amines (histamine, tyramine) can cause poisoning and allergies.
-
-The consumption of foods containing high concentrations of biogenic amines has been associated with health hazards [1].
-
 ## Research objectives
 
 The pipeline will allow testing the genetic data of bacterial strains for the presence of genes responsible for the synthesis of biogenic amines. The pipeline screens bacterial genome assemblies or raw reads to detect the following genes:
@@ -68,7 +62,7 @@ The pipeline will allow testing the genetic data of bacterial strains for the pr
 - Quality metrics (QUAST)  
 
 **Interactive reporting:**
-- Sample-level HTML reports  
+- Sample-level HTML reports and summary report
 - Presence/absence matrix  
 - Heatmap visualization  
 
@@ -102,38 +96,52 @@ The pipeline consists of the following steps:
 
 ## Installation
 
-### Conda (recommended)
+Use the provided `environment.yaml` file to create the conda environment. If you don't have conda, use these [installation instuctions](https://www.anaconda.com/docs/getting-started/miniconda/install#linux):
 ```bash
 git clone https://github.com/venikkus/biogenic_amines_search.git
 cd biogenic_amines_search
-conda env create -f environment.yaml
+conda env create -f environment.yml
 conda activate amines_search
 ```
-
 
 ## Quick Start
 
 ### Edit the configuration file:
 
-- [NUM_CORES] — number of CPU cores to use (e.g., 4, 16, etc.)
-- [ID] — SRA ID or assembly ID.
-- [SOURCE] — offline (from folder) or online (from NCBI)
-
+Example:
 ```bash
-# config.yaml
+# For ONLINE data (NCBI downloads)
 assembly_samples:
-  id: ["GCF_000350465.1", "GCF_000009685.1"]  # NCBI Assembly IDs
-  source: "online"  # or "offline" for local files
+  id: 
+    - GCF_000350465.1  # Enterococcus durans IPLA 655
+    - GCF_000009685.1  # Clostridium perfringens str.13
+  source: "online"
 
 sra_samples:
-  id: ["SRR123456", "SRR789012"]  # SRA accessions
-  source: "online"  # or "offline"
+  id:
+    - SRR8594964  # Lactobacillus acidophilus
+  source: "online"
+
+# For OFFLINE data (local files)
+assembly_samples:
+  id:
+    - offline_GCF_901482635.1  # Local assembly
+  source: "offline"
+  local_path: "/path/to/assemblies"  # Directory containing *.fasta files
+
+sra_samples:
+  id:
+    - offline_SRR8594964  # Local reads
+  source: "offline" 
+  local_path: "/path/to/reads"  # Directory containing *_1.fastq and *_2.fastq
+
+genes_of_interest: "genes.txt"  # Optional gene list
 ```
 
 ### Run the pipeline:
 
 ```bash
-snakemake --cores 8 --use-conda
+snakemake --cores [NUM_CORES]
 ```
 
 
