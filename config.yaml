@@ -1,7 +1,49 @@
-source: "online"          # "online" или "offline"
-input_type: "sra"         # "sra" (FASTQ) or "assembly"
-id: "SRR123456"           # SRA_ID or GCF/GCA for assemblies
-offline_reads:
-  - "~path/to/SRR123456_1.fastq"
-  - "~path/to/SRR123456_2.fastq"
-offline_assembly: "path/to/assembly/contigs.fasta"
+source: online
+assembly_samples:
+  source: online
+  id:
+    - GCF_000350465.1 # Enterococcus durans IPLA 655, hdcA
+    - GCF_000009685.1 # Clostridium perfringens str. 13, hdcA
+    - GCF_901482635.1 # Staphylococcus capitis, hdcA
+    - GCF_000159435.1 # Limosilactobacillus vaginalis DSM 5837 = ATCC 49540, hdcA
+    - GCF_000317165.1 # Ligilactobacillus saerimneri 30a, hdcA
+    - GCF_001677035.1 # Lentilactobacillus parabuchneri, hdc
+    - GCF_001687155.1 # Lentilactobacillus parabuchneri, hdc
+    - GCF_001687145.1 # Lentilactobacillus parabuchneri, hdc
+    - GCF_900258435.1 # Carnobacterium divergens, tdc
+    - GCF_003966405.1 # Enterococcus faecalis, tdc
+    - GCF_008365415.1 # Enterococcus faecium, tdc
+    - GCF_000026105.1 # Pseudomonas entomophila L48, tdc
+    - GCF_000007565.2 # Pseudomonas putida KT2440, tdc
+    - GCF_000014285.2 # Granulibacter bethesdensis CGDNIH1, tdc
+    - GCF_029581645.1 # Latilactobacillus curvatus, tdcA
+    - GCF_000014465.1 # Levilactobacillus brevis ATCC 367, tdc, agdi?
+    - GCF_000161935.1 # Limosilactobacillus coleohominis 101-4-CHN, tdc
+    - GCF_000180015.1 # Limosilactobacillus oris PB013-T2-3, tdc
+    - GCF_000008065.1 # Lactobacillus johnsonii NCC 533, odc
+    - GCF_000011985.1 # Lactobacillus acidophilus NCFM, odc
+    - GCF_000014425.1 # Lactobacillus gasseri ATCC 33323 = JCM 1131, odc
+    - GCF_000014505.1 # Pediococcus pentosaceus ATCC 25745, agdi
+    - GCF_000008285.1 # Listeria monocytogenes serotype 4b str. F2365, agdi
+    - GCF_000026065.1 # Latilactobacillus sakei subsp. sakei 23K
+    - GCF_036832165.1 # Tetragenococcus halophilus, non-producing
+# tdcB, ldcC
+
+sra_samples:
+  source: online
+  id:
+    - SRR8594964 # Lactobacillus acidophilus, odc
+
+assembly_samples:
+  id: 
+    - offline_GCF_901482635.1
+  source: "offline"
+  local_path: "./"
+
+sra_samples:
+  id: 
+    - SRR8594964
+  source: "offline"
+  local_path: "./offline_SRR8594964" 
+
+genes_of_interest: "genes_of_interest.txt"
