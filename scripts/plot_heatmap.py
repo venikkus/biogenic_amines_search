@@ -15,7 +15,7 @@ def set_style() -> None:
         "figure.facecolor": "none",       # Transparent figure background
         "savefig.facecolor": "none",      # Transparent save background
         "figure.edgecolor": "none",       # No figure border
-        # "axes.edgecolor": "lightgray",    # Axis edge color
+        "axes.edgecolor": "lightgray",    # Axis edge color
         # "axes.labelcolor": "white",       # Axis label color
         # "xtick.color": "white",           # X-tick color
         # "ytick.color": "white",           # Y-tick color

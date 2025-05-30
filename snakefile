@@ -4,19 +4,19 @@ configfile: "config.yaml"
 GENES_FILE = config["genes_of_interest"]
 
 ASSEMBLY_SOURCE = config["assembly_samples"].get("source", "online")
-SRA_SOURCE = config["sra_samples"].get("source", "online")
+SRA_SOURCE = config.get("sra_samples", {}).get("source", "online")
 
-ASSEMBLY_ONLINE = config["assembly_samples"]["online"]["ids"]
-ASSEMBLY_OFFLINE = config["assembly_samples"]["offline"]["ids"]
-SRA_ONLINE = config["sra_samples"]["online"]["ids"]
-SRA_OFFLINE = config["sra_samples"]["offline"]["ids"]
+ASSEMBLY_ONLINE = config.get("assembly_samples", {}).get("online", {}).get("ids", [])
+ASSEMBLY_OFFLINE = config.get("assembly_samples", {}).get("offline", {}).get("ids", [])
+SRA_ONLINE = config.get("sra_samples", {}).get("online", {}).get("ids", [])
+SRA_OFFLINE = config.get("sra_samples", {}).get("offline", {}).get("ids", [])
 
-ALL_IDS = ASSEMBLY_ONLINE + ASSEMBLY_OFFLINE + SRA_ONLINE + SRA_OFFLINE
 SRA_IDS = SRA_ONLINE + SRA_OFFLINE
 ASSEMBLY_IDS = ASSEMBLY_ONLINE + ASSEMBLY_OFFLINE
+ALL_IDS = ASSEMBLY_IDS + SRA_IDS
 
 ASSEMBLY_LOCAL_DIR = config["assembly_samples"].get("local_path", "local_assemblies")
-SRA_LOCAL_DIR = config["sra_samples"].get("local_path", "local_sra")
+SRA_LOCAL_DIR = config.get("sra_samples", {}).get("local_path", "local_sra")
 
 GENES = []
 if os.path.exists(GENES_FILE):
@@ -34,7 +34,7 @@ rule all:
         "summary/presence_absence_heatmap.png",
         "reports/full_report.html"
 
-if SRA_ONLINE:  # Если есть онлайн-образцы
+if SRA_ONLINE:
     rule download_sra:
         output: 
             "sra/{sample}.sra"
@@ -56,11 +56,11 @@ if SRA_ONLINE:  # Если есть онлайн-образцы
             "mkdir -p input_reads && "
             "fasterq-dump {input} -O input_reads/ --split-files"
 
-if SRA_OFFLINE:  # Если есть оффлайн-образцы (ОТДЕЛЬНЫЙ блок if!)
+if SRA_OFFLINE:
     rule local_sra_input:
         input:
-            r1 = os.path.join(SRA_LOCAL_DIR, "{sample}_1.fastq"),
-            r2 = os.path.join(SRA_LOCAL_DIR, "{sample}_2.fastq")
+            r1 = lambda wildcards: os.path.join(config.get("sra_samples", {}).get("offline", {}).get("local_path", "local_sra"), f"{wildcards.sample}_1.fastq"),
+            r2 = lambda wildcards: os.path.join(config.get("sra_samples", {}).get("offline", {}).get("local_path", "local_sra"), f"{wildcards.sample}_2.fastq")
         output:
             r1 = "input_reads/{sample}_1.fastq",
             r2 = "input_reads/{sample}_2.fastq"
@@ -71,7 +71,7 @@ if SRA_OFFLINE:  # Если есть оффлайн-образцы (ОТДЕЛЬ
             "ln -sf $(readlink -f {input.r1}) {output.r1} && "
             "ln -sf $(readlink -f {input.r2}) {output.r2}"
 
-if SRA_IDS:  # Общее правило для всех SRA
+if SRA_IDS:
     rule trimming_reads:
         input:
             r1 = "input_reads/{sample}_1.fastq",
@@ -122,7 +122,7 @@ if ASSEMBLY_IDS:
     if ASSEMBLY_OFFLINE:
         rule local_assembly_input:
             input:
-                lambda wildcards: os.path.join(config["assembly_samples"]["offline"]["local_path"], f"{wildcards.sample}.fasta")
+                lambda wildcards: os.path.join(config.get("assembly_samples", {}).get("offline", {}).get("local_path", "local_assemblies"), f"{wildcards.sample}.fasta")
             output:
                 "assembly/{sample}/contigs.fasta"
             wildcard_constraints:
@@ -182,39 +182,43 @@ rule presence_absence_matrix:
         )
         
         base_gene_names = set()
+        # Initialize data for all samples
+        data = defaultdict(lambda: defaultdict(int))
+        for sample in ALL_IDS:
+            data[sample] = defaultdict(int)
 
+        # Collect all unique gene names
         for file in input.sample_files:
             if os.path.exists(file) and os.path.getsize(file) > 0:
                 try:
                     df = pd.read_csv(file, sep='\t', header=None, names=["locus_tag", "gene", "product"])
-                    # extracting base gene names (without suffixes)
                     base_names = [re.sub(r'_\d+$', '', gene) for gene in df["gene"] if gene_pattern.search(gene)]
                     base_gene_names.update(base_names)
-                except (pd.errors.EmptyDataError, FileNotFoundError):
-                    continue
-        
+                except (pd.errors.EmptyDataError, FileNotFoundError) as e:
+                    print(f"Warning: Could not process {file}: {e}", file=sys.stderr)
+            else:
+                print(f"Warning: File {file} is missing or empty", file=sys.stderr)
+
         base_gene_names = sorted(base_gene_names)
-        data = defaultdict(lambda: defaultdict(int))
-        
-        # copies count
-        for file in input.sample_files:
-            sample = os.path.basename(os.path.dirname(file)).replace("amines_", "")
-            
+        # Pre-fill all samples with zeros
+        for sample in ALL_IDS:
             for gene in base_gene_names:
                 data[sample][gene] = 0
-            
+        
+        # Update counts for samples with data
+        for file in input.sample_files:
+            sample = os.path.basename(os.path.dirname(file)).replace("amines_", "")
             if os.path.exists(file) and os.path.getsize(file) > 0:
                 try:
                     df = pd.read_csv(file, sep='\t', header=None, names=["locus_tag", "gene", "product"])
                     filtered_df = df[df["gene"].str.contains(gene_pattern, na=False)]
-                    
                     for _, row in filtered_df.iterrows():
                         base_name = re.sub(r'_\d+$', '', row["gene"])
                         if base_name in base_gene_names:
                             data[sample][base_name] += 1
-                except (pd.errors.EmptyDataError, FileNotFoundError):
-                    continue
-        
+                except (pd.errors.EmptyDataError, FileNotFoundError) as e:
+                    print(f"Warning: Could not process {file}: {e}", file=sys.stderr)
+
         result_df = pd.DataFrame.from_dict({k: dict(v) for k, v in data.items()}, orient='index')
         result_df = result_df.reindex(columns=base_gene_names)
         result_df.to_csv(output[0], sep='\t', index=True)
@@ -394,3 +398,5 @@ rule aggregate_reports:
         
         shutil.copy(input.heatmap_png, "reports/heatmap.png")
         shutil.copy(input.matrix_tsv, "reports/matrix.tsv")
+
+# TODO опять разобраться с конфигами: почему меня кидает только двумя файлами..

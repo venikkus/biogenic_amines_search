@@ -4,7 +4,6 @@ This repository contains a **Snakemake**-based pipeline for searching for biogen
 
 ## Content
 
-- [Research overview](#research-overview)
 - [Research objectives](#research-objectives)
 - [Features](#key-features)
 - [Pipeline Overview](#pipeline-overview)
@@ -17,9 +16,9 @@ This repository contains a **Snakemake**-based pipeline for searching for biogen
 
 ## Research objectives
 
-The pipeline will allow testing the genetic data of bacterial strains for the presence of genes responsible for the synthesis of biogenic amines. The pipeline screens bacterial genome assemblies or raw reads to detect the following genes:
+The pipeline will allow testing the genetic data of bacterial strains for the presence of genes responsible for the synthesis of biogenic amines. We used these genomes:
 
-| Genome ID | Organism | Gene | Source | Assembly Link |
+| Genome ID | Organism | Gene (mentioned in article) | Source | Assembly Link |
 |-----------------|---------------------------------------------------|-------|--------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
 | GCF_000350465.1 | *Enterococcus durans* IPLA 655                    | hdcA  | [Ladero et al. (2013)](https://pubmed.ncbi.nlm.nih.gov/23682153/)                                                                                                                       | [NCBI](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000350465.1/)            |
 | GCF_000009685.1 | *Clostridium perfringens* str. 13                 | hdcA  | [Landete et al. (2008)](https://www.tandfonline.com/doi/full/10.1080/10408390701639041)                                                                | [NCBI](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000009685.1/)            |
@@ -45,6 +44,30 @@ The pipeline will allow testing the genetic data of bacterial strains for the pr
 | GCF_000014505.1 | *Pediococcus pentosaceus* ATCC 25745              | agdi  | [Lucas et al. (2014)](https://www.sciencedirect.com/science/article/pii/S0168160514000373)                                                             | [NCBI](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000014505.1/)            |
 | GCF_000008285.1 | *Listeria monocytogenes* serotype 4b str. F2365   | agdi  | [Lucas et al. (2014)](https://www.sciencedirect.com/science/article/pii/S0168160514000373)                                                             | [NCBI](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000008285.1/)            |
 | GCF_000026065.1 | *Latilactobacillus sakei* subsp. *sakei* 23K      | agdi  | [Lucas et al. (2014)](https://www.sciencedirect.com/science/article/pii/S0168160514000373)                                                             | [NCBI](https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_000026065.1/)            |
+
+
+The pipeline screens bacterial genome assemblies or raw reads to detect the following genes:
+
+| Name               | Decarboxylase Name | Gene(s) | Classification | Chemical Structure | Precursor Amino Acid | References |
+|--------------------|--------------------|---------|----------------|--------------------|----------------------|------------|
+| Methylamine        | Glycine decarboxylase | gcv, gdc | Monoamine | Aliphatic | Glycine | [1](https://www.cell.com/trends/plant-science/fulltext/S1360-1385(01)01892-1), [2](https://onlinelibrary.wiley.com/doi/abs/10.1046/j.1365-294X.1997.00279.x), [3](https://www.sciencedirect.com/topics/medicine-and-dentistry/glycine-dehydrogenase-decarboxylating) |
+| Ethylamine         | Alanine decarboxylase | aldc | Monoamine | Aliphatic | Alanine | [1](https://www.sciencedirect.com/science/article/abs/pii/S0031942200941736), [2](https://link.springer.com/article/10.1186/s12896-021-00674-x) |
+| Phenylethylamine   | Tyrosine decarboxylase | tdc/DDC, aadc | Monoamine | Aromatic | Phenylalanine | [1](https://www.frontiersin.org/journals/microbiology/articles/10.3389/fmicb.2015.00259/full), [2](https://www.tandfonline.com/doi/abs/10.1080/10408398.2010.500545) |
+| Tyramine           | Tyrosine decarboxylase | tdc, tdcA, tdcB, TDC-1, DDC, TYDC, tyrDC, mfnA, adc | Monoamine | Aromatic | Tyrosine | [1](https://www.frontiersin.org/journals/microbiology/articles/10.3389/fmicb.2015.00259/full), [2](https://www.tandfonline.com/doi/abs/10.1080/10408398.2010.500545) |
+| Octopamine         | Tyrosine decarboxylase | tdc | Monoamine | Aromatic | Tyrosine (Tyramine intermediate) | [1](https://www.sciencedirect.com/topics/biochemistry-genetics-and-molecular-biology/octopamine), [2](https://www.annualreviews.org/content/journals/10.1146/annurev.ento.50.071803.130404) |
+| Dopamine           | Tyrosine decarboxylase, L-tryptophan decarboxylase | TYDC, DDC, TDC | Monoamine | Aromatic | Tyrosine | [1](https://www.annualreviews.org/content/journals/10.1146/annurev.ento.50.071803.130404) |
+| Norepinephrine     | Dopamine beta-monooxygenase | - | Monoamine | Aromatic | Tyrosine | - |
+| Adrenalin          | Phenylethanolamine N-methyltransferase | - | Monoamine | Aromatic | Tyrosine | - |
+| Histamine          | Histidine decarboxylase | hdc | Monoamine | Heterocyclic | Histidine | [1](https://journals.asm.org/doi/full/10.1128/aem.01496-07) |
+| Tryptamine         | Tryptophan decarboxylase | tdc | Monoamine | Heterocyclic | Tryptophan | [1](https://onlinelibrary.wiley.com/doi/abs/10.1046/j.1365-313X.1997.11061167.x) |
+| Serotonin          | Aromatic-L-amino-acid/L-tryptophan decarboxylase, Tryptamine 5-hydroxylase | DDC, TDC, CYP71P1 | Monoamine | Heterocyclic | Hydroxytryptophane | - |
+| Putrescine         | Ornithine decarboxylase | odc, speC, speF | Diamine | Aliphatic | Ornithine | [1](https://www.jbc.org/article/S0021-9258(20)72392-6/fulltext), [2](https://journals.asm.org/doi/abs/10.1128/jb.175.5.1221-1234.1993), [3](https://www.sciencedirect.com/science/article/pii/S0362028X22064948) |
+|                    | Arginine decarboxylase | adc, adiA, speA | Polyamine | Aliphatic | Arginine | [1](https://www.jbc.org/article/S0021-9258(20)72392-6/fulltext), [2](https://academic.oup.com/mbe/article/15/10/1312/999792), [3](https://journals.asm.org/doi/abs/10.1128/jb.175.5.1221-1234.1993) |
+| Agmatine           | Arginine decarboxylase | speA, adiA | Polyamine | Aliphatic | Arginine | [1](https://nyaspubs.onlinelibrary.wiley.com/doi/full/10.1196/annals.1304.004), [2](https://pmc.ncbi.nlm.nih.gov/articles/PMC9241758/), [3](https://pubmed.ncbi.nlm.nih.gov/39546898/) |
+| Cadaverine         | Lysine decarboxylase | ldcC, cadA | Diamine | Aliphatic | Lysine | [1](https://pubs.acs.org/doi/pdf/10.1021/bi00701a005), [2](https://www.microbiologyresearch.org/content/journal/micro/10.1099/00221287-144-3-751), [3](https://journals.asm.org/doi/abs/10.1128/jb.175.5.1221-1234.1993) |
+|                    | Cadaverine antiporter | cadB | - | - | - | [1](https://academic.oup.com/jimb/article/41/4/701/5995075) |
+| Spermidine         | Spermidine synthase | speE, speD | Polyamine | Aliphatic | Arginine/Ornithine | [1](https://pmc.ncbi.nlm.nih.gov/articles/PMC9241758/) |
+| Spermine           | Spermine synthase | speE, speD | Polyamine | Aliphatic | Arginine/Ornithine | [1](https://pmc.ncbi.nlm.nih.gov/articles/PMC11107197/) |
 
 ## Key Features
 
@@ -141,7 +164,7 @@ genes_of_interest: "genes.txt"  # Optional gene list
 ### Run the pipeline:
 
 ```bash
-snakemake --cores [NUM_CORES]
+snakemake -p --cores [NUM_CORES]
 ```
 
 
