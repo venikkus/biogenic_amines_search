@@ -1,13 +1,19 @@
 import os
 configfile: "config.yaml"
 
-ASSEMBLY_IDS = config["assembly_samples"]["id"]
-SRA_IDS = config["sra_samples"]["id"]
-ALL_IDS = ASSEMBLY_IDS + SRA_IDS
-
-ASSEMBLY_SOURCE = config["assembly_samples"]["source"]
-SRA_SOURCE = config["sra_samples"]["source"]
 GENES_FILE = config["genes_of_interest"]
+
+ASSEMBLY_SOURCE = config["assembly_samples"].get("source", "online")
+SRA_SOURCE = config["sra_samples"].get("source", "online")
+
+ASSEMBLY_ONLINE = config["assembly_samples"]["online"]["ids"]
+ASSEMBLY_OFFLINE = config["assembly_samples"]["offline"]["ids"]
+SRA_ONLINE = config["sra_samples"]["online"]["ids"]
+SRA_OFFLINE = config["sra_samples"]["offline"]["ids"]
+
+ALL_IDS = ASSEMBLY_ONLINE + ASSEMBLY_OFFLINE + SRA_ONLINE + SRA_OFFLINE
+SRA_IDS = SRA_ONLINE + SRA_OFFLINE
+ASSEMBLY_IDS = ASSEMBLY_ONLINE + ASSEMBLY_OFFLINE
 
 ASSEMBLY_LOCAL_DIR = config["assembly_samples"].get("local_path", "local_assemblies")
 SRA_LOCAL_DIR = config["sra_samples"].get("local_path", "local_sra")
@@ -28,44 +34,44 @@ rule all:
         "summary/presence_absence_heatmap.png",
         "reports/full_report.html"
 
-if SRA_IDS:
-    if SRA_SOURCE == "online":
-        rule download_sra:
-            output: 
-                "sra/{sample}.sra"
-            wildcard_constraints:
-                sample="|".join(SRA_IDS)
-            shell:
-                "mkdir -p sra && "
-                "prefetch {wildcards.sample} --output-file {output}"
+if SRA_ONLINE:  # Если есть онлайн-образцы
+    rule download_sra:
+        output: 
+            "sra/{sample}.sra"
+        wildcard_constraints:
+            sample="|".join(SRA_ONLINE)
+        shell:
+            "mkdir -p sra && "
+            "prefetch {wildcards.sample} --output-file {output}"
 
-        rule split_files:
-            input:
-                "sra/{sample}.sra"
-            output:
-                r1 = "input_reads/{sample}_1.fastq",
-                r2 = "input_reads/{sample}_2.fastq"
-            wildcard_constraints:
-                sample="|".join(SRA_IDS)
-            shell:
-                "mkdir -p input_reads && "
-                "fasterq-dump {input} -O input_reads/ --split-files"
-    
-    elif SRA_SOURCE == "offline":
-        rule local_sra_input:
-            input:
-                r1 = os.path.join(SRA_LOCAL_DIR, "{sample}/{sample}_1.fastq"),
-                r2 = os.path.join(SRA_LOCAL_DIR, "{sample}/{sample}_2.fastq")
-            output:
-                r1 = "input_reads/{sample}_1.fastq",
-                r2 = "input_reads/{sample}_2.fastq"
-            wildcard_constraints:
-                sample="|".join(SRA_IDS)
-            shell:
-                "mkdir -p input_reads && "
-                "ln -sf $(readlink -f {input.r1}) {output.r1} && "
-                "ln -sf $(readlink -f {input.r2}) {output.r2}"
-    
+    rule split_files:
+        input:
+            "sra/{sample}.sra"
+        output:
+            r1 = "input_reads/{sample}_1.fastq",
+            r2 = "input_reads/{sample}_2.fastq"
+        wildcard_constraints:
+            sample="|".join(SRA_ONLINE)
+        shell:
+            "mkdir -p input_reads && "
+            "fasterq-dump {input} -O input_reads/ --split-files"
+
+if SRA_OFFLINE:  # Если есть оффлайн-образцы (ОТДЕЛЬНЫЙ блок if!)
+    rule local_sra_input:
+        input:
+            r1 = os.path.join(SRA_LOCAL_DIR, "{sample}_1.fastq"),
+            r2 = os.path.join(SRA_LOCAL_DIR, "{sample}_2.fastq")
+        output:
+            r1 = "input_reads/{sample}_1.fastq",
+            r2 = "input_reads/{sample}_2.fastq"
+        wildcard_constraints:
+            sample="|".join(SRA_OFFLINE)
+        shell:
+            "mkdir -p input_reads && "
+            "ln -sf $(readlink -f {input.r1}) {output.r1} && "
+            "ln -sf $(readlink -f {input.r2}) {output.r2}"
+
+if SRA_IDS:  # Общее правило для всех SRA
     rule trimming_reads:
         input:
             r1 = "input_reads/{sample}_1.fastq",
@@ -73,13 +79,15 @@ if SRA_IDS:
         output:
             p1 = "clean_data/{sample}_1P.fastq",
             p2 = "clean_data/{sample}_2P.fastq"
+        wildcard_constraints:
+            sample="|".join(SRA_IDS)
         shell:
             """
             mkdir -p clean_data && 
             trimmomatic PE -threads {threads} {input.r1} {input.r2} \
             {output.p1} clean_data/{wildcards.sample}_1U.fastq \
             {output.p2} clean_data/{wildcards.sample}_2U.fastq \
-            LEADING:20 TRAILING:20 MINLEN:20 \
+            LEADING:20 TRAILING:20 MINLEN:20
             """
 
     rule genome_assembly_sra:
@@ -90,36 +98,40 @@ if SRA_IDS:
             "assembly/{sample}/contigs.fasta"
         wildcard_constraints:
             sample="|".join(SRA_IDS)
-        threads: 8
+        threads: 30
         shell:
             "mkdir -p $(dirname {output}) && "
             "spades.py -t {threads} -1 {input.r1} -2 {input.r2} -o $(dirname {output})"
 
 if ASSEMBLY_IDS:
-    if ASSEMBLY_SOURCE == "online":
+    if ASSEMBLY_ONLINE:
         rule download_assembly:
             output:
                 "assembly/{sample}/contigs.fasta"
             wildcard_constraints:
-                sample="|".join(ASSEMBLY_IDS)
+                sample="|".join(ASSEMBLY_ONLINE)
             shell:
-                "mkdir -p $(dirname {output}) && "
-                "datasets download genome accession {wildcards.sample} --filename {wildcards.sample}.zip && "
-                "unzip -o {wildcards.sample}.zip -d $(dirname {output}) && "
-                "find $(dirname {output}) -name '*.fna' -exec mv {{}} {output} \; && "
-                "rm {wildcards.sample}.zip"
+                """
+                mkdir -p $(dirname {output}) && 
+                datasets download genome accession {wildcards.sample} --filename {wildcards.sample}.zip && 
+                unzip -o {wildcards.sample}.zip -d $(dirname {output}) && 
+                find $(dirname {output}) -name '*.fna' -exec mv {{}} {output} \; && 
+                rm {wildcards.sample}.zip
+                """
         
-    elif ASSEMBLY_SOURCE == "offline":
+    if ASSEMBLY_OFFLINE:
         rule local_assembly_input:
             input:
-                lambda wildcards: os.path.join(ASSEMBLY_LOCAL_DIR, f"{wildcards.sample}.fasta")
+                lambda wildcards: os.path.join(config["assembly_samples"]["offline"]["local_path"], f"{wildcards.sample}.fasta")
             output:
                 "assembly/{sample}/contigs.fasta"
             wildcard_constraints:
-                sample="|".join(ASSEMBLY_IDS)
+                sample="|".join(ASSEMBLY_OFFLINE)
             shell:
-                "mkdir -p $(dirname {output}) && "
-                "cp {input} {output}"
+                """
+                mkdir -p $(dirname {output}) && 
+                cp {input} {output}
+                """
 rule run_quast:
     input:
         "assembly/{sample}/contigs.fasta"
@@ -137,7 +149,7 @@ rule run_prokka:
         tsv = "prokka_output/{sample}/{sample}.tsv",
     shell:
         "mkdir -p $(dirname {output.gff}) && "
-        "prokka --force --outdir $(dirname {output.gff}) --prefix {wildcards.sample} {input}"
+        "prokka --kingdom Bacteria --force --outdir $(dirname {output.gff}) --prefix {wildcards.sample} {input}"
 
 rule amine_search:
     input:
